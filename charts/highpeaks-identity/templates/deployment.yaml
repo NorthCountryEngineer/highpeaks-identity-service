@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: highpeaks-identity-service
+  labels:
+    app: highpeaks-identity
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: highpeaks-identity
+  template:
+    metadata:
+      labels:
+        app: highpeaks-identity
+    spec:
+      containers:
+      - name: identity
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: 80
+        env:
+        - name: NODE_ENV
+          value: "production"

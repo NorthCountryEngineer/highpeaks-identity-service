@@ -1,0 +1,13 @@
+{
+    "name": "highpeaks-identity-service",
+    "version": "0.1.0",
+    "description": "High Peaks AI - Identity Service (authentication and user management)",
+    "main": "index.js",
+    "license": "MIT",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "express": "^4.18.2"
+    }
+}  

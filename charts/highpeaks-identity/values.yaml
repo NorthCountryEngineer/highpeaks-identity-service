@@ -1,0 +1,14 @@
+# Default Helm chart values for High Peaks Identity Service
+replicaCount: 1
+
+image:
+  repository: highpeaks-identity-service
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+# Resources can be specified (limits/requests), omitted for simplicity
+# resources: {}
