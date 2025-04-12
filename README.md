@@ -11,32 +11,33 @@ By default, you may choose to deploy either approach: the Node.js service alone,
 
 ## Repository Structure
 
-```plaintext
-highpeaks-identity-service/
-├── README.md                           # This file – instructions for devs
-├── Dockerfile                          # Containerization of the Node.js identity microservice
-├── package.json                        # Node.js dependencies/metadata
-├── index.js                            # Main source code for the Node.js identity service (Express server)
-├── charts/
-│   └── highpeaks-identity/
-│       ├── Chart.yaml                  # Helm chart metadata (Node.js service)
-│       ├── values.yaml                 # Default Helm values (image name, service type, etc.)
-│       └── templates/
-│           ├── deployment.yaml         # K8s Deployment for the Node.js identity microservice
-│           └── service.yaml            # K8s Service for the Node.js identity microservice
-└── .github/
-    └── workflows/
-        └── ci.yml                     # GitHub Actions workflow for CI (linting, build checks)
 ```
-# Node.js Identity Microservice
-## Development Setup
+highpeaks-identity-service/ 
+├── README.md                 # This file – instructions for devs 
+├── Dockerfile                # Containerization for the Node.js identity microservice 
+├── package.json              # Node.js dependencies 
+├── index.js                  # Main source code for Node.js identity service 
+├── charts/ 
+│ └── highpeaks-identity/ 
+│ ├── Chart.yaml              # Helm chart for Node.js identity microservice 
+│ ├── values.yaml             # Default Helm values (image, service config) 
+│ └── templates/ 
+│     ├── deployment.yaml     # Node.js service Deployment 
+│     └── service.yaml        # Node.js service Service 
+└── .github/ 
+└── workflows/ 
+└── ci.yml # GitHub Actions for lint/build checks
+```
+## 1. Node.js Identity Microservice
 
-Prerequisites: Node.js (≥14.x) and npm on your dev machine.
+### Development Setup
 
-1. Install dependencies:
+**Prerequisites**: Node.js (≥14.x) and npm.
 
-`npm install`
-
+1. **Install Dependencies**:
+```bash
+npm install
+```
 2. Run locally:
 
 `node index.js`
@@ -60,7 +61,7 @@ Prerequisites: Node.js (≥14.x) and npm on your dev machine.
 Within charts/highpeaks-identity, a Helm chart deploys this Node.js service onto Kubernetes.
 
 1. Build & load the Docker image (if using a local Kind cluster):
-```
+```bash
 docker build -t highpeaks-identity-service:latest .
 kind load docker-image highpeaks-identity-service:latest --name highpeaks
 ```
@@ -80,8 +81,13 @@ Check:
 
 You’ll see a pod named something like highpeaks-identity-service-xxxx.
 
-### Usage
-The Node.js service is primarily a simple user endpoint (/health, /users). If you want advanced OIDC capabilities, see Keycloak below.
+4. Port Access: By default, service.type=ClusterIP. For local dev, you might:
+
+Port-forward:
+
+`kubectl port-forward -n highpeaks-identity svc/highpeaks-identity-service 8081:80`
+
+Then open http://localhost:8081/health.
 
 # Keycloak Deployment (Bitnami Helm Chart)
 Keycloak is an open-source identity and access management solution providing OIDC, single sign-on, user federation, etc.
@@ -97,7 +103,7 @@ Keycloak is an open-source identity and access management solution providing OID
 
 1. Add Bitnami Helm repo:
 
-```
+```bash
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
 ```
@@ -109,13 +115,32 @@ helm repo update
 3. Configure/verify your values.yaml for Keycloak if you’re overriding defaults (for example, disabling NodePort or switching to Ingress).
 
 4. Install Keycloak:
-```
+```bash
 helm upgrade --install keycloak bitnami/keycloak \
   --namespace highpeaks-identity \
   --set service.type=ClusterIP \
   --set ingress.enabled=true \
   [--values ... your custom overrides ...]
 ```
+5. Access Keycloak:
+Port-forward:
+
+`kubectl port-forward -n highpeaks-identity svc/keycloak 8080:80`
+
+Then http://localhost:8080
+
+Or Ingress if using NGINX (e.g., keycloak.highpeaks.local + /etc/hosts).
+
+6. Admin Credentials:
+```bash
+kubectl get secret --namespace highpeaks-identity keycloak \
+  -o jsonpath="{.data.admin-user}" | base64 --decode ; echo
+kubectl get secret --namespace highpeaks-identity keycloak \
+  -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+```
+Then log in to the Keycloak admin console.
+
+
 
 5. Port-forward or use an Ingress to access Keycloak:
 
@@ -125,7 +150,7 @@ helm upgrade --install keycloak bitnami/keycloak \
 
 ## Post-install
 Admin credentials:
-```
+```bash
     kubectl get secret --namespace highpeaks-identity keycloak \
       -o jsonpath="{.data.admin-user}" | base64 --decode ; echo
     kubectl get secret --namespace highpeaks-identity keycloak \
@@ -190,62 +215,3 @@ You can decide whether to keep the Node.js service as a “lightweight identity�
    * Document your chosen approach for local dev vs. production.
 
    * Integrate with other microservices (ML, devops agent) so they use Keycloak or your identity JWT endpoints for authentication.
-
-
-
-
-
-
-
-
-## Development Setup
-
-**Prerequisites:** Node.js (≥14.x) and npm on your development machine (e.g., a MacBook with VSCode).
-
-1. **Install dependencies:** Navigate to this repository's root directory and run `npm install` to install Express and any other dependencies.
-2. **Run the service locally:** You can start the identity service for local testing by running:
-   ```bash
-   node index.js
-   ```
-   This will launch the Express server on port 80 (or a port specified by the `PORT` environment variable). You should see log output indicating the service is running. Test it by visiting `http://localhost:80/health` or `http://localhost:80/users` in your browser or via curl.
-3. **Build the container image:** To containerize the service, ensure Docker is installed and running, then execute:
-   ```bash
-   docker build -t highpeaks-identity-service:latest .
-   ```
-   This builds a Docker image for the identity service. You can run it with:
-   ```bash
-   docker run -p 8081:80 highpeaks-identity-service:latest
-   ```
-   which maps the service to port 8081 on your machine for testing.
-
-## Kubernetes Deployment (Helm Chart)
-
-This repository includes a Helm chart (under `charts/highpeaks-identity`) to deploy the identity service to Kubernetes:
-- The **Deployment** manifest runs the Node.js service container.
-- The **Service** manifest exposes it internally within the cluster.
-- By default, the chart assumes the Docker image tag `highpeaks-identity-service:latest`, which is convenient for local clusters (e.g., Kind) where the image can be loaded without a registry.
-
-To deploy using Helm:
-```bash
-helm install identity-service charts/highpeaks-identity --values charts/highpeaks-identity/values.yaml
-```
-This will create a deployment and service in the current Kubernetes namespace (you may create a dedicated namespace like `highpeaks-identity` and use `-n highpeaks-identity`).
-
-_For local testing on a Kind cluster_, ensure you've built the image and loaded it into the cluster (using `kind load docker-image highpeaks-identity-service:latest`). Then install the chart as above.
-
-## CI/CD
-
-We use GitHub Actions for basic Continuous Integration:
-- The workflow (`.github/workflows/ci.yml`) is triggered on pushes and pull requests. It lints the code and validates the Kubernetes manifests.
-- **Linting:** We could integrate ESLint for code style checks in future. Currently, the workflow ensures `npm install` runs without errors (catching any dependency issues).
-- **Build Validation:** The workflow attempts to build the Docker image (without pushing) to verify that the Dockerfile and application compile successfully.
-- (In a real project, we would also run unit tests and security scans here.)
-
-On a successful merge to the main branch, the built image can be published to a container registry, and the Helm chart (or Kustomize manifests) can be deployed to a cluster via a GitOps tool or continuous deployment pipeline.
-
-## Security & DevSecOps Notes
-
-This identity service will be central to authentication across the platform. Future enhancements might include:
-- Integration with an OIDC provider or directory service for enterprise-grade identity management.
-- Storing secrets (like JWT signing keys) securely (for example, using Kubernetes Secrets, which can be managed via sealed-secrets or vault in a real deployment).
-- Automated security scans (SAST/DAST) in the CI pipeline to detect vulnerabilities in dependencies or code.

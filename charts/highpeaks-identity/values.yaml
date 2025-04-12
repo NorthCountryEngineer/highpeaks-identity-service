@@ -1,23 +1,21 @@
-# keycloak/values.yaml
+extraEnvVars:
+  - name: KEYCLOAK_LOG_LEVEL
+    value: DEBUG
 
-keycloak:
-  extraEnvVars:
-    - name: KEYCLOAK_LOG_LEVEL
-      value: DEBUG
+persistence:
+  enabled: true
+  # existingClaim: keycloak-pvc
 
-  persistence:
-    enabled: true
-    # existingClaim: keycloak-pvc  # If you have a pre-created PVC, specify it here
-
-  ingress:
-    enabled: true
-    hostname: keycloak.highpeaks.local
-    annotations:
-      kubernetes.io/ingress.class: "nginx"
-      nginx.ingress.kubernetes.io/rewrite-target: /
-    path: /
-    tls: false
-
+ingress:
+  enabled: true
+  hostname: keycloak.highpeaks.local
+  ingressClassName: nginx
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  path: /
+  pathType: Prefix
+  tls: false
 
 postgresql:
   enabled: true
@@ -27,6 +25,15 @@ postgresql:
 
 service:
   type: ClusterIP
+  ports:
+    http: 80
+    https: 8443
+
+proxy: edge   # Tells Keycloak traffic is HTTP internally, but TLS is terminated before Keycloak
+
+auth:
+  adminUser: keycloakadmin
+  adminPassword: admin123
 
 readinessProbe:
   httpGet:
